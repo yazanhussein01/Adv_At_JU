@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+                <html>
+                  <head>
+                    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+                    <meta charset="utf-8">
+                    <title></title>
+                    <script src="https://3d-mapper.com/_MAP/_BABYLON/dist/babylon.js"></script>
+                    <script src="https://3d-mapper.com/_MAP/_BABYLON/dist/materialsLibrary/babylon.waterMaterial.js"></script>
+                    <script src="https://3d-mapper.com/_MAP/_BABYLON/dist/earcut.min.js"></script>
+                    <style>
+                      html { height: 100%; }
+                      body {height:100%;min-height: 100%; background-color: #a5a5a5; padding: 0;margin: 0;font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;}
+                      canvas {width:100%;height: 100%; background-color: #a5a5a5;}
+                      canvas:focus{outline:none;}
+                      #atributation {position: absolute; right: 3px; bottom: 3px; background-color: white; color: gray; padding: 3px 6px; font-size: 10px; opacity: 0.8;}
+                      #atributation a {color: gray;}
+                      #pinPopupWrapper {position: absolute; left: 0; top: 0; width:100%; height: 100%; background-color: #000000; opacity: 0.8; display: none}
+                      .pinPopup {
+                        width: 300px;
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        margin-left: -150px;
+                        margin-top: -150px;
+                        background: #fff;
+                        -webkit-border-radius: 4px;
+                        -moz-border-radius: 4px;
+                        border-radius: 4px;
+                        -webkit-box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.7);
+                        box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.7);
+                        display: none;
+                        z-index:9999;
+                      }
+                      .pinPopupClose {
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        height: 20px;
+                        width: 20px;
+                        border-radius: 50%;
+                        background: #000;
+                        opacity: 0.3;
+                        text-align: center;
+                        color: #fff;
+                        cursor: pointer;
+                        font-size: 16px;
+                        line-height: 16px;
+                      }
+                      .pinPopupContent {
+                        padding: 5px 15px;
+                        color: #333;
+                        text-align: center;
+                      }
+                      .pinPopupTitle {
+                        padding-top: 5px;
+                        padding-bottom: 10px;
+                        font-weight: bold;
+                        border-bottom: 1px solid #ccc;
+                        font-size: 16px;
+                      }
+                      .pinPopupText {
+                        margin-top: 10px;
+                        margin-bottom: 5px;
+                        font-size: 12px;
+                      }
+                      .pinPopupButton {
+                        margin-top: 30px;
+                        margin-bottom: 30px;
+                        font-size: 12px;
+                      }
+                      .pinPopupButton a {
+                        background-color: #1473E6;
+                        color: #fff;
+                        text-decoration: none;
+                        border-radius: 15px;
+                        padding: 10px 20px;
+                        font-weight: bold;
+                      }
+                      .pinPopupImg img {
+                        width: 100%;
+                        height: auto;
+                        -webkit-border-top-left-radius: 4px;
+                        -webkit-border-top-right-radius: 4px;
+                        -moz-border-radius-topleft: 4px;
+                        -moz-border-radius-topright: 4px;
+                        border-top-left-radius: 4px;
+                        border-top-right-radius: 4px;
+                      }
+                    </style>
+                  </head>
+                  <body style="overflow: hidden;">
+                  <div id="pinPopupWrapper" onclick="myAllCloseFunction()"></div>
+                  <div id="atributation"><a href=\"https://www.maptiler.com/copyright/\" target=\"_blank\">© MapTiler</a> <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">© OpenStreetMap contributors</a></div>
+                  <canvas id="renderCanvas"></canvas><script>var canvas = document.getElementById("renderCanvas");var engine = new BABYLON.Engine(canvas, true);var createScene = function(){var scene = new BABYLON.Scene(engine);scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);var spot  = new BABYLON.HemisphericLight("spot", new BABYLON.Vector3(1, 4.5, -2), scene);spot.intensity = 1.2;spot.diffuse = new BABYLON.Color3(1,1,1);spot.specular = new BABYLON.Color3(0.1,0.1,0.1);function createSidesForGroundMesh(ground, bottomY) {var sub = ground.subdivisions;var scene = ground.getScene();var edgeHeights = [];var borderHeights = [];ground.updateMeshPositions(function (positions) {var last = positions.length / 3 - 1;for (var idx = 0; idx < positions.length; idx += 3) {var e = idx / 3; var y = positions[idx + 1]; positions[idx + 1] = y; var mod = e % (sub + 1);if (mod == 0 || mod == sub) { edgeHeights.push(y); } if (e <= sub || e >= last - sub) { borderHeights.push(y); }}});var groundSizeX = ground._width;var groundSizeZ = ground._height;var paths = [];var subSizeX = groundSizeX / sub;var subSizeZ = groundSizeZ / sub;var x = 0.0;var y = bottomY;var z = groundSizeZ / 2;var e = 0;var p = 0;var path = [];for (p = sub; p >= 0; p--) { x = subSizeX * p - groundSizeX / 2;  path.push(new BABYLON.Vector3(x, borderHeights[p], z));}for (e = 0; e <= sub; e++) { z = -e * subSizeZ + groundSizeZ / 2; path.push(new BABYLON.Vector3(-groundSizeX / 2, edgeHeights[e * 2], z)); }for (p = 0; p <= sub; p++) { x = subSizeX * p - groundSizeX / 2;  path.push(new BABYLON.Vector3(x, borderHeights[p + sub + 1], z)); }for (e = sub; e >= 0; e--) { z = -e * subSizeZ + groundSizeZ / 2; path.push(new BABYLON.Vector3(groundSizeX / 2, edgeHeights[e * 2 + 1], z)); }paths.push(path);path = [];for (p = sub; p >= 0; p--) { x = subSizeX * p - groundSizeX / 2;  path.push(new BABYLON.Vector3(x, y, z)); }for (e = 0; e <= sub; e++) { z = -e * subSizeZ + groundSizeZ / 2; path.push(new BABYLON.Vector3(-groundSizeX / 2, y, z)); }for (p = 0; p <= sub; p++) { x = subSizeX * p - groundSizeX / 2;  path.push(new BABYLON.Vector3(x, y, z));}for (e = sub; e >= 0; e--) { z = -e * subSizeZ + groundSizeZ / 2; path.push(new BABYLON.Vector3(groundSizeX / 2, y, z));}paths.push(path);var groundRibbon = BABYLON.MeshBuilder.CreateRibbon("gr", { pathArray: paths}, scene);groundRibbon.position.copyFrom(ground.position);return groundRibbon;}var camera = new BABYLON.ArcRotateCamera("Camera",-33.11236753970811,0.32935482207290684,179.9814128604817, new BABYLON.Vector3.Zero(), scene);camera.lowerBetaLimit = 0.1;camera.upperBetaLimit = (Math.PI / 2) * 0.9;camera.lowerRadiusLimit = 30;camera.upperRadiusLimit = 256;scene.activeCamera = camera;scene.activeCamera.attachControl(canvas);camera.useAutoRotationBehavior = true;camera.autoRotationBehavior.idleRotationSpeed = 0;var groundMaterial = new BABYLON.PBRMetallicRoughnessMaterial("mapSurfaceMaterial", scene);groundMaterial.metallic = 0.3;groundMaterial.roughness = 1.0;groundMaterial.baseTexture = new BABYLON.Texture("terrainmap.png", scene,true,true);var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "heightmap.png",66,100,300, 0, 10, scene, true, successCallback);ground.material = groundMaterial;ground.position.y  = 0;function successCallback(){var groundRibbon = createSidesForGroundMesh(ground, -5);var groundRibbonMat = new BABYLON.StandardMaterial("grm", scene);var groundTex = new BABYLON.Texture("edges/ground_1.jpg", scene);groundTex.uScale = 16;groundTex.vScale = 1;groundRibbonMat.diffuseTexture = groundTex;groundRibbon.material = groundRibbonMat;}var skybox = BABYLON.MeshBuilder.CreateBox("skybox", {size:1000.0}, scene);var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);skyboxMaterial.backFaceCulling = false;skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("skybox/skybox01", scene);skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);skybox.material = skyboxMaterial;function pickPin(meshEvent){ var pickedMesh = meshEvent.meshUnderPointer; var pickedName = pickedMesh.name; document.getElementById('pinPopupWrapper').style.display = 'block'; document.getElementById(pickedName).style.display = 'block';}return scene;};var engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });var scene = createScene();engine.runRenderLoop(function() { scene.render(); });window.addEventListener("resize", function(){ engine.resize(); });</script><script>function myAllCloseFunction(){ document.getElementById('pinPopupWrapper').style.display = 'none'; var pinPopups = document.getElementsByClassName('pinPopup'); for (var i = 0; i < pinPopups.length; i ++) { pinPopups[i].style.display = 'none'; } } function myCloseFunction(myid){ document.getElementById('pinPopupWrapper').style.display = 'none'; document.getElementById(myid).style.display = 'none'; } </script></body></html>
